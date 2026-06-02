@@ -9,6 +9,22 @@ import requests
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters
 
+from flask import Flask
+from threading import Thread
+
+# Simple web server for Render health checks
+web_app = Flask('')
+
+@web_app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run_web():
+    web_app.run(host='0.0.0.0', port=10000)
+
+# Start web server in background
+Thread(target=run_web, daemon=True).start()
+
 # ============================================
 # CONFIGURATION - Read from Environment Variables
 # ============================================
