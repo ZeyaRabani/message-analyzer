@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Telegram Message Analyzer Bot - Batch summarizer with name/company tracking
+PUBLIC VERSION - anyone can use
 """
 
 import os
@@ -16,12 +17,11 @@ from telegram.ext import Application, MessageHandler, filters
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-YOUR_USER_ID = int(os.environ.get("YOUR_USER_ID", "0"))
 
-# Keywords to track
+# Keywords to track (case insensitive)
 KEYWORDS = ["BIT10", "bit10", "Bit10", "Zeya", "zeya"]
 
-# Store messages temporarily (per user)
+# Store messages temporarily (per user) - each user has their own queue
 user_messages = {}
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -42,47 +42,31 @@ def run_web():
 Thread(target=run_web, daemon=True).start()
 
 # ============================================
-# BOT LOGIC
+# BOT LOGIC - PUBLIC VERSION (Anyone can use)
 # ============================================
 
 async def analyze_message(update: Update, context):
-    """Main function - analyzes messages sent to the bot"""
+    """Store messages for batch processing - works for ANY user"""
     
     user_id = update.effective_user.id
     message_text = update.message.text
     
-    # REMOVED: if YOUR_USER_ID and user_id != YOUR_USER_ID: return
-    
-    # Let user know the bot is working
-    await update.message.reply_text("🤔 Analyzing...")
-    
-    # Rest of your code remains the same...
-    
-    # Only store messages from you
-    if user_id != YOUR_USER_ID:
-        return
-    
-    # Initialize message list for this user if not exists
+    # Store messages for THIS user (each user has their own queue)
     if user_id not in user_messages:
         user_messages[user_id] = []
     
-    # Store the message
     user_messages[user_id].append(message_text)
     
-    # Show count
     count = len(user_messages[user_id])
     await update.message.reply_text(f"📥 Message stored. You have {count} message(s) in queue.\n\nSend /summarize to process all, or /clear to reset.")
 
 async def summarize_command(update: Update, context):
-    """Summarize all stored messages"""
+    """Summarize all stored messages for the user"""
     
     user_id = update.effective_user.id
     
-    if user_id != YOUR_USER_ID:
-        return
-    
     if user_id not in user_messages or not user_messages[user_id]:
-        await update.message.reply_text("📭 No messages stored. Forward messages to me first!")
+        await update.message.reply_text("📭 No messages stored. Send me messages first!")
         return
     
     messages = user_messages[user_id]
@@ -99,7 +83,7 @@ async def summarize_command(update: Update, context):
     # Prepare batch for summarization
     combined = "\n---\n".join([f"Message {i+1}: {m}" for i, m in enumerate(messages)])
     
-    prompt = f"""You are analyzing {len(messages)} messages for a user named Zeya who runs a company called BIT10.
+    prompt = f"""You are analyzing {len(messages)} messages.
 
 TASK 1: Check if BIT10 or Zeya is mentioned. If yes, FLAG it as IMPORTANT.
 
@@ -154,12 +138,9 @@ Keep summaries concise and actionable."""
         await update.message.reply_text(f"❌ Error: {str(e)[:100]}")
 
 async def clear_command(update: Update, context):
-    """Clear all stored messages"""
+    """Clear all stored messages for the user"""
     
     user_id = update.effective_user.id
-    
-    if user_id != YOUR_USER_ID:
-        return
     
     if user_id in user_messages:
         count = len(user_messages[user_id])
@@ -169,22 +150,14 @@ async def clear_command(update: Update, context):
         await update.message.reply_text("📭 No messages to clear.")
 
 async def status_command(update: Update, context):
-    """Show current message count"""
+    """Show current message count for the user"""
     
     user_id = update.effective_user.id
-    
-    if user_id != YOUR_USER_ID:
-        return
-    
     count = len(user_messages.get(user_id, []))
     await update.message.reply_text(f"📊 You have {count} message(s) in queue.\n\nSend /summarize to process, /clear to reset.")
 
 async def start_command(update: Update, context):
-    user_id = update.effective_user.id
-    if user_id != YOUR_USER_ID:
-        await update.message.reply_text("Sorry, this bot is private.")
-        return
-    
+    """Welcome message - now public"""
     await update.message.reply_text(
         "✅ **Batch Message Analyzer Active!**\n\n"
         "**How to use:**\n"
@@ -204,7 +177,7 @@ async def help_command(update: Update, context):
     await start_command(update, context)
 
 def main():
-    if not TELEGRAM_BOT_TOKEN or not GROQ_API_KEY or YOUR_USER_ID == 0:
+    if not TELEGRAM_BOT_TOKEN or not GROQ_API_KEY:
         print("❌ Missing environment variables!")
         return
     
@@ -216,8 +189,8 @@ def main():
     app.add_handler(MessageHandler(filters.COMMAND & filters.Regex('^/clear$'), clear_command))
     app.add_handler(MessageHandler(filters.COMMAND & filters.Regex('^/status$'), status_command))
     
-    print("✅ Batch analyzer bot is running!")
-    print("Commands: /summarize, /status, /clear")
+    print("✅ PUBLIC batch analyzer bot is running!")
+    print("Anyone can use it now.")
     app.run_polling()
 
 if __name__ == "__main__":
