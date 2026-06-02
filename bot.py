@@ -46,10 +46,11 @@ Thread(target=run_web, daemon=True).start()
 # ============================================
 
 async def analyze_message(update: Update, context):
-    """Store messages for batch processing"""
-    
     user_id = update.effective_user.id
     message_text = update.message.text
+    
+    # Remove the user ID check completely
+    # Anyone can now use the bot
     
     # Only store messages from you
     if user_id != YOUR_USER_ID:
