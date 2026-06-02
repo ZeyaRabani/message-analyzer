@@ -46,11 +46,17 @@ Thread(target=run_web, daemon=True).start()
 # ============================================
 
 async def analyze_message(update: Update, context):
+    """Main function - analyzes messages sent to the bot"""
+    
     user_id = update.effective_user.id
     message_text = update.message.text
     
-    # Remove the user ID check completely
-    # Anyone can now use the bot
+    # REMOVED: if YOUR_USER_ID and user_id != YOUR_USER_ID: return
+    
+    # Let user know the bot is working
+    await update.message.reply_text("🤔 Analyzing...")
+    
+    # Rest of your code remains the same...
     
     # Only store messages from you
     if user_id != YOUR_USER_ID:
